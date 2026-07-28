@@ -216,7 +216,7 @@ def collect_adverts():
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(
-            headless=False,
+            headless=True,
         )
 
         context = browser.new_context(

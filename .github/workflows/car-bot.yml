@@ -44,10 +44,22 @@ jobs:
         run: |
           python main.py
 
+      - name: Upload OLX debug files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: olx-debug
+          path: |
+            olx_debug.png
+            olx_debug.html
+          if-no-files-found: ignore
+          retention-days: 3
+
       - name: Save database
+        if: success()
         run: |
           if git diff --quiet cars.db; then
-            echo "База не изменилась"
+            echo "Database has not changed"
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

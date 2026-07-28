@@ -242,20 +242,28 @@ def collect_adverts():
 
         page.wait_for_timeout(4000)
         close_cookies(page)
-print(f"Текущий адрес: {page.url}")
-print(f"Заголовок страницы: {page.title()}")
 
-page.screenshot(
-    path="olx_debug.png",
-    full_page=True,
-)
+        print(f"Текущий адрес: {page.url}")
+        try:
+            print(f"Заголовок страницы: {page.title()}")
+        except Exception as error:
+            print(f"Не удалось прочитать заголовок страницы: {error}")
 
-with open(
-    "olx_debug.html",
-    "w",
-    encoding="utf-8",
-) as debug_file:
-    debug_file.write(page.content())
+        try:
+            page.screenshot(
+                path="olx_debug.png",
+                full_page=True,
+            )
+            with open(
+                "olx_debug.html",
+                "w",
+                encoding="utf-8",
+            ) as debug_file:
+                debug_file.write(page.content())
+            print("Отладочные файлы OLX сохранены.")
+        except Exception as error:
+            print(f"Не удалось сохранить отладочные файлы OLX: {error}")
+
         cards = page.locator(
             '[data-cy="l-card"]'
         )

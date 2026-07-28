@@ -1,1 +1,9 @@
-
+{
+  "actorSpecification": 1,
+  "name": "auto-telegram",
+  "title": "AutoTelegram Cars",
+  "description": "Checks OLX and Otomoto car listings and sends new adverts to Telegram.",
+  "version": "0.1",
+  "buildTag": "latest",
+  "dockerfile": "../Dockerfile"
+}

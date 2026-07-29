@@ -218,7 +218,7 @@ def collect_adverts():
         browser = playwright.chromium.launch(
     headless=True,
     proxy={
-        "server": "http://84.247.60.125:6095",
+        "server": "http://31.59.20.176:6754",
         "username": "mntkpkvk",
         "password": "xsh0gut6e2gb",
     },
@@ -687,7 +687,7 @@ def load_adverts_details(adverts):
         browser = playwright.chromium.launch(
     headless=True,
     proxy={
-        "server": "http://84.247.60.125:6095",
+        "server": "http://31.59.20.176:6754",
         "username": "mntkpkvk",
         "password": "xsh0gut6e2gb",
     },

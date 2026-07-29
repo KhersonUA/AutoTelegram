@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from urllib.parse import quote
 
 import requests
@@ -11,6 +12,7 @@ load_dotenv()
 APIFY_TOKEN = os.getenv("APIFY_TOKEN")
 FACEBOOK_TASK_ID = os.getenv("FACEBOOK_TASK_ID")
 APIFY_API = "https://api.apify.com/v2"
+FINISHED_STATUSES = {"SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"}
 
 
 def headers():
@@ -32,62 +34,87 @@ def ensure_configuration():
         )
 
 
-def run_task_and_get_items():
+def start_task():
     task_id = quote(FACEBOOK_TASK_ID, safe="~")
+    url = f"{APIFY_API}/actor-tasks/{task_id}/runs"
 
-    url = (
-        f"{APIFY_API}/actor-tasks/{task_id}/"
-        "run-sync-get-dataset-items"
-        "?format=json"
-        "&clean=true"
-    )
-
-    print(
-        "Запускаю Facebook Marketplace Task "
-        "и жду готовый Dataset..."
-    )
+    print("Запускаю Facebook Marketplace Task...")
 
     response = requests.post(
         url,
         headers=headers(),
         json={},
-        timeout=720,
+        timeout=60,
+    )
+    response.raise_for_status()
+
+    payload = response.json()
+    run_id = (payload.get("data") or {}).get("id")
+
+    if not run_id:
+        raise RuntimeError(
+            f"Apify не вернул ID запуска: {payload}"
+        )
+
+    print(f"Facebook Task запущен. Run ID: {run_id}")
+    return run_id
+
+
+def wait_for_run(run_id, max_wait_seconds=720):
+    deadline = time.monotonic() + max_wait_seconds
+
+    while time.monotonic() < deadline:
+        response = requests.get(
+            f"{APIFY_API}/actor-runs/{run_id}?waitForFinish=60",
+            headers=headers(),
+            timeout=75,
+        )
+        response.raise_for_status()
+
+        run = response.json().get("data") or {}
+        status = run.get("status")
+        print(f"Статус Facebook Task: {status}")
+
+        if status in FINISHED_STATUSES:
+            if status != "SUCCEEDED":
+                raise RuntimeError(
+                    "Facebook Task завершился со статусом "
+                    f"{status}: {run.get('statusMessage')}"
+                )
+
+            dataset_id = run.get("defaultDatasetId")
+            if not dataset_id:
+                raise RuntimeError(
+                    "Apify не вернул defaultDatasetId."
+                )
+
+            print(f"Facebook Dataset ID: {dataset_id}")
+            return dataset_id
+
+        time.sleep(2)
+
+    raise TimeoutError(
+        "Facebook Task не завершился за 12 минут."
     )
 
-    try:
-        response.raise_for_status()
-    except requests.HTTPError as error:
-        print(
-            "Apify вернул ошибку при запуске "
-            "Facebook Task."
-        )
-        print(f"HTTP status: {response.status_code}")
-        print(response.text[:2000])
-        raise RuntimeError(
-            "Не удалось запустить Facebook Task "
-            "или получить Dataset."
-        ) from error
 
-    try:
-        items = response.json()
-    except ValueError as error:
-        print("Apify вернул ответ не в формате JSON.")
-        print(response.text[:2000])
-        raise RuntimeError(
-            "Facebook Dataset имеет неправильный формат."
-        ) from error
+def get_dataset_items(dataset_id):
+    response = requests.get(
+        f"{APIFY_API}/datasets/{dataset_id}/items"
+        "?format=json&clean=true&limit=100",
+        headers=headers(),
+        timeout=90,
+    )
+    response.raise_for_status()
+
+    items = response.json()
 
     if not isinstance(items, list):
-        print(f"Неожиданный ответ Apify: {items}")
         raise RuntimeError(
             "Facebook Dataset имеет неожиданный формат."
         )
 
-    print(
-        "Из Facebook Dataset получено: "
-        f"{len(items)}"
-    )
-
+    print(f"Из Facebook Dataset получено: {len(items)}")
     return items
 
 
@@ -280,7 +307,9 @@ def normalize_item(item):
 def collect_facebook_adverts():
     ensure_configuration()
 
-    items = run_task_and_get_items()
+    run_id = start_task()
+    dataset_id = wait_for_run(run_id)
+    items = get_dataset_items(dataset_id)
 
     adverts = []
 

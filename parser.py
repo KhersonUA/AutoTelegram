@@ -216,8 +216,13 @@ def collect_adverts():
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(
-            headless=True,
-        )
+    headless=True,
+    proxy={
+        "server": "http://84.247.60.125:6095",
+        "username": "mntkpkvk",
+        "password": "xsh0gut6e2gb",
+    },
+)
 
         context = browser.new_context(
             locale="pl-PL",
@@ -680,8 +685,13 @@ def load_adverts_details(adverts):
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(
-            headless=True,
-        )
+    headless=True,
+    proxy={
+        "server": "http://84.247.60.125:6095",
+        "username": "mntkpkvk",
+        "password": "xsh0gut6e2gb",
+    },
+)
 
         context = browser.new_context(
             locale="pl-PL",

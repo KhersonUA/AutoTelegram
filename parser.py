@@ -1,14 +1,43 @@
+import os
 import re
 from datetime import datetime
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
+from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
+
+
+load_dotenv()
 
 
 SEARCH_URL = (
     "https://www.olx.pl/motoryzacja/samochody/gorzow/"
     "?search%5Border%5D=created_at:desc"
 )
+
+
+def get_proxy_config():
+    server = os.getenv("PROXY_SERVER")
+    username = os.getenv("PROXY_USERNAME")
+    password = os.getenv("PROXY_PASSWORD")
+
+    if not server:
+        print("PROXY_SERVER не указан. Запускаю без прокси.")
+        return None
+
+    proxy = {
+        "server": server.strip(),
+    }
+
+    if username:
+        proxy["username"] = username.strip()
+
+    if password:
+        proxy["password"] = password.strip()
+
+    print(f"Используется прокси: {proxy['server']}")
+
+    return proxy
 
 COOKIE_BUTTONS = [
     "Akceptuję",
@@ -216,13 +245,9 @@ def collect_adverts():
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(
-    headless=True,
-    proxy={
-        "server": "http://31.59.20.176:6754",
-        "username": "mntkpkvk",
-        "password": "xsh0gut6e2gb",
-    },
-)
+            headless=True,
+            proxy=get_proxy_config(),
+        )
 
         context = browser.new_context(
             locale="pl-PL",
@@ -685,13 +710,9 @@ def load_adverts_details(adverts):
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(
-    headless=True,
-    proxy={
-        "server": "http://31.59.20.176:6754",
-        "username": "mntkpkvk",
-        "password": "xsh0gut6e2gb",
-    },
-)
+            headless=True,
+            proxy=get_proxy_config(),
+        )
 
         context = browser.new_context(
             locale="pl-PL",
